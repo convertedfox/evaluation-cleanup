@@ -3,9 +3,11 @@
 Kleine Windows-Desktop-Anwendung zum Finden und kontrollierten Löschen alter
 Evaluationen. Python 3.12, Flet 0.85.3 und Standardbibliothek; keine Inhaltsanalyse.
 
-**Aktueller Stand: Dry-Run. `DELETE_ENABLED = False`.** Die Oberfläche simuliert
-Löschungen und verändert keine gefundenen Dateien. Windows-Abnahme und Freigabe
-für produktives Löschen stehen noch aus.
+**Aktueller Stand: Produktiv freigegeben, `DELETE_ENABLED = True`.** Die
+Oberfläche löscht bestätigte Dateien **endgültig, nicht in den Papierkorb**.
+Der aktuelle Release-Build steht als `Evaluationen-bereinigen.zip` unter
+[GitHub Releases](https://github.com/convertedfox/evaluation-cleanup/releases/latest)
+(Version 1.0, Tag `V_1.0`) zum Download bereit.
 
 ## Für die Anwenderin
 
@@ -19,10 +21,23 @@ für produktives Löschen stehen noch aus.
 7. Im Dialog abbrechen oder die beschriftete Löschfläche bewusst mit Maus/Touch
    anklicken. Enter bestätigt keine Löschung.
 
-Im Testmodus bleibt jede Datei erhalten. Im später freigegebenen Echtbetrieb
-werden Dateien **endgültig gelöscht, nicht in den Papierkorb verschoben**.
-Ergebnis und Einzelfehler erscheinen im Anschluss. Vor einem weiteren Auftrag
-ist eine neue Suche erforderlich.
+Bestätigte Dateien werden **endgültig gelöscht, nicht in den Papierkorb
+verschoben**. Ergebnis und Einzelfehler erscheinen im Anschluss. Vor einem
+weiteren Auftrag ist eine neue Suche erforderlich.
+
+## Release
+
+Der aktuelle Stand ist als GitHub Release **Version 1.0** (Tag `V_1.0`)
+veröffentlicht:
+https://github.com/convertedfox/evaluation-cleanup/releases/latest
+
+1. `Evaluationen-bereinigen.zip` vom Release herunterladen.
+2. In einem eigenen Ordner entpacken.
+3. `Evaluationen-bereinigen.exe` per Doppelklick starten. Python oder ein
+   Terminal sind nicht nötig, die Laufzeit liegt im entpackten Ordner.
+
+Der Build wurde mit `flet build windows` auf einer Windows-VM erzeugt; siehe
+Abschnitt "Windows-Build" für das Vorgehen bei einem erneuten Build.
 
 ## Entwicklung
 
@@ -40,6 +55,11 @@ Auf Linux funktioniert die Entwicklung mit temporären Testdaten; der fest
 eingestellte Windows-Pfad wird dort als nicht erreichbar angezeigt.
 
 ### Lokale Demo ohne Netzlaufwerk
+
+Die Demo verweigert absichtlich den Start, solange `DELETE_ENABLED = True`
+gesetzt ist (siehe `tools/demo.py`). Für lokale Demo-Läufe den Schalter in
+`src/evaluation_cleanup/config.py` temporär auf `False` setzen und diese
+Änderung **nicht committen/veröffentlichen**.
 
 #### Demo mit den bereitgestellten PDF-/Excel-Dateien
 
@@ -105,9 +125,10 @@ uv run pytest
 ```
 
 Die Tests verwenden ausschließlich temporäre Verzeichnisse, niemals `T:` und
-kein Netzwerk. Echtes Löschen wird in einzelnen Tests gezielt mit temporären
-Dummy-Dateien geprüft; der Konfigurationsschalter bleibt dabei unverändert im
-Quelltext auf `False`. Die Flet-Integrationstests führen die registrierten
+kein Netzwerk. Tests, die gezielt Dry-Run- oder Lösch-Verhalten prüfen, setzen
+`config.DELETE_ENABLED` dazu per `monkeypatch` explizit auf den benötigten Wert
+und sind damit unabhängig vom aktuellen Auslieferungsstand im Quelltext. Die
+Flet-Integrationstests führen die registrierten
 Ereignishandler mit echten Controls und einem simulierten Page-Objekt aus. Das
 ersetzt keine sichtbare Windows-Abnahme. Symlink-Tests werden übersprungen, falls
 das Betriebssystem keine entsprechenden Rechte gewährt.
@@ -138,7 +159,8 @@ tools/demo.py                   Separater lokaler Demo-Starter
 `src/evaluation_cleanup/config.py` enthält:
 
 - `ALLOWED_ROOT`: ausschließlich `T:\ZHL\Personalförderung\02_Seminare`.
-- `DELETE_ENABLED = False`: kein echtes Löschen im ausgelieferten Entwicklungsstand.
+- `DELETE_ENABLED = True`: echtes, endgültiges Löschen im aktuellen Release.
+  `tests/test_config.py` prüft diesen Wert explizit ab.
 - `SUPPORTED_EXTENSIONS`: `.pdf`, `.xlsx`, `.xls`, unabhängig von Groß-/Kleinschreibung.
 - `EVALUATION_KEYWORDS`: Unicode-normalisierte, nicht case-sensitive Teilstringsuche.
 
@@ -190,15 +212,23 @@ manuelle Prüfung. Dateiinhalte werden nie protokolliert.
 ## Windows-Build
 
 Der moderne offizielle Weg ist **`flet build windows`**, nicht `flet pack`.
-Ein Windows-Build kann nur auf einem Windows-Host erstellt werden.
+Ein Windows-Build kann nur auf einem Windows-Host erstellt werden; eine
+Windows-VM (z. B. unter Linux) funktioniert dafür ebenso gut wie echte
+Hardware. Der Release-Build Version 1.0 wurde so erzeugt.
 
 ### Voraussetzungen auf dem Build-Rechner
 
 - Windows 10/11, Python 3.12, uv und Git.
 - Visual Studio 2022 mit **Desktop development with C++**, einschließlich
-  MSVC-Toolchain, CMake und Windows SDK.
+  MSVC-Toolchain, CMake und Windows SDK. Neuere Visual-Studio-Toolsets (z. B.
+  Preview-/Insider-Versionen) sind von Flet/Flutter nicht offiziell getestet.
 - Internetzugriff für den ersten Download der Flet-/Flutter-Buildwerkzeuge und
   Paketabhängigkeiten. Flet 0.85.3 meldet Flutter 3.41.7 als zugehörige Version.
+- **Projektpfad ohne Umlaute oder Sonderzeichen**, z. B. `C:\dev\evaluation-cleanup`.
+  Ein Pfad mit Umlaut (z. B. im Ordnernamen `Evaluationslöschtool`) hat den
+  Build mit einem kaum lesbaren Fehler abbrechen lassen (`Unable to read file:
+  ...app.dill`) — Ursache war eine falsch kodierte Pfadkomponente in der
+  CMake/Ninja/Dart-Toolchain.
 
 Im Projektverzeichnis (PowerShell):
 
@@ -222,8 +252,9 @@ reicht bei diesem Buildverfahren nicht. Die Anwenderin entpackt den Ordner und
 startet die EXE per Doppelklick; Python und Terminal sind nicht erforderlich.
 Die Flet-/Python-Laufzeit wird mitgeliefert. Den Build auf einem Windows-Rechner
 ohne Entwicklungsumgebung prüfen, einschließlich etwaiger nativer
-Laufzeitvoraussetzungen. Ein Windows-Build wurde in der Linux-Entwicklungsumgebung
-noch nicht erzeugt oder ausgeführt.
+Laufzeitvoraussetzungen. Der aktuelle Build wurde erfolgreich in einer
+Windows-VM erzeugt und als GitHub Release Version 1.0 veröffentlicht (siehe
+Abschnitt "Release").
 
 Offizielle Referenzen:
 - [Flet-Veröffentlichung](https://flet.dev/docs/publish)
@@ -245,10 +276,12 @@ Offizielle Referenzen:
 6. **Windows-Paket:** Im Testmodus bauen und auf einem Rechner ohne Python/
    Entwicklungsumgebung starten. Nicht verbundenes `T:`, Wiederverbinden und
    anschließend den reinen Scan auf `T:` mit der Fachanwenderin prüfen.
-7. **Produktivfreigabe:** Erst nach dokumentierter Abnahme und expliziter Freigabe
-   `DELETE_ENABLED = True` setzen und neu bauen. Der Test für den sicheren
-   Auslieferungsmodus muss dann bewusst an den freigegebenen Release-Stand
-   angepasst werden. Zunächst ausschließlich 1–2 ausdrücklich dafür vorgesehene
-   Testdateien auf dem Produktivlaufwerk löschen und Protokoll/Ergebnis prüfen.
+7. **Produktivfreigabe:** Mit Version 1.0 vorgenommen — `DELETE_ENABLED = True`
+   ist gesetzt, `tests/test_config.py` prüft das explizit ab. Vor dem Rollout an
+   die Anwenderin weiterhin auf dem Ziel-Laptop ohne Python/Entwicklungsumgebung
+   testen: nicht verbundenes `T:`, Wiederverbinden und Scan gegen den echten Pfad
+   prüfen. Danach zunächst ausschließlich 1–2 ausdrücklich dafür vorgesehene
+   Testdateien auf dem Produktivlaufwerk löschen und Protokoll/Ergebnis kontrollieren,
+   bevor der reguläre Betrieb beginnt.
 
 Die Freigabe erfolgt nicht automatisch durch bestandene Unit-Tests.
