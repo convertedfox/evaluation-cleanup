@@ -181,12 +181,6 @@ Suche oder eine geänderte Auswahl entwertet vorherige Bestätigungen. Ein Auftr
 kann nur einmal bestätigt werden. Scan und Löschung laufen im Hintergrund;
 währenddessen sind die betreffenden Bedienelemente gesperrt.
 
-**Betriebsgrenze:** Die erneute Pfadprüfung und `Path.unlink()` sind getrennte
-Betriebssystemoperationen, keine atomare Transaktion. Gegen einen gezielten
-gleichzeitigen Austausch von Pfadkomponenten im winzigen Zwischenraum besteht
-keine handlebasierte Absicherung. Für die Produktivfreigabe muss dieser Punkt
-für das Netzlaufwerk bewertet werden; bei entsprechenden Anforderungen ist vor
-Aktivierung eine Windows-handlebasierte Löschimplementierung nötig.
 
 ### Protokoll
 
