@@ -16,7 +16,8 @@ from tools import demo
 from tools.demo import DOCUMENT_LAYOUT, create_demo_files, create_document_demo
 
 
-def test_demo_structure_dry_run(tmp_path: Path) -> None:
+def test_demo_structure_dry_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(config, "DELETE_ENABLED", False)
     root = tmp_path / "Seminare"
     paths = create_demo_files(root)
     original = {path: path.read_bytes() for path in paths}
@@ -39,7 +40,10 @@ def archive(tmp_path: Path) -> Path:
     return path
 
 
-def test_document_demo_copies_bytes_and_finds_expected_years(archive: Path, tmp_path: Path) -> None:
+def test_document_demo_copies_bytes_and_finds_expected_years(
+    archive: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(config, "DELETE_ENABLED", False)
     root = tmp_path / "demo" / "Seminare"
     original_archive = archive.read_bytes()
     paths = create_document_demo(archive, root)
@@ -116,6 +120,7 @@ def test_document_demo_launcher_retains_files_and_log(
     archive: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(demo, "__file__", str(tmp_path / "tools" / "demo.py"))
+    monkeypatch.setattr(config, "DELETE_ENABLED", False)
     page = Mock(spec=ft.Page)
 
     async def fake_main(page: ft.Page, *, workflow: CleanupWorkflow | None = None) -> None:
@@ -146,6 +151,7 @@ def test_prepare_only_does_not_launch_gui(
     archive: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(demo, "__file__", str(tmp_path / "tools" / "demo.py"))
+    monkeypatch.setattr(config, "DELETE_ENABLED", False)
     launcher = Mock(side_effect=AssertionError("Keine GUI beim reinen Einrichten"))
     monkeypatch.setattr(ft, "run", launcher)
     demo.cli(["--documents", "--prepare-only"])

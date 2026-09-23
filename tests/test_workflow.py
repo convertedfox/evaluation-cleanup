@@ -11,8 +11,12 @@ from evaluation_cleanup.workflow import CleanupWorkflow
 
 
 def test_complete_dry_run_workflow(
-    root: Path, tmp_path: Path, make_file: Callable[[str], Path]
+    root: Path,
+    tmp_path: Path,
+    make_file: Callable[[str], Path],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr(config, "DELETE_ENABLED", False)
     paths = [make_file(f"2024/Kategorie/Seminar/Feedback_{i}.pdf") for i in range(3)]
     newer = make_file("2025/Evaluation.xlsx")
     original_bytes = {path: path.read_bytes() for path in [*paths, newer]}
@@ -48,6 +52,7 @@ def test_stale_confirmations_are_rejected(
     make_file: Callable[[str], Path],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr(config, "DELETE_ENABLED", False)
     path = make_file("2024/Feedback.pdf")
     workflow = CleanupWorkflow(DeletionService(root, tmp_path / "actions.csv"))
     workflow.refresh()

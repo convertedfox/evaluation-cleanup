@@ -7,7 +7,9 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import flet as ft
+import pytest
 
+from evaluation_cleanup import config
 from evaluation_cleanup.deletion import DeletionService
 from evaluation_cleanup.ui import CleanupScreen
 from evaluation_cleanup.workflow import CleanupWorkflow
@@ -20,8 +22,12 @@ async def dispatch(handler: object, event: object) -> None:
 
 
 def test_ui_full_dry_run_and_confirmation(
-    root: Path, tmp_path: Path, make_file: Callable[[str], Path]
+    root: Path,
+    tmp_path: Path,
+    make_file: Callable[[str], Path],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr(config, "DELETE_ENABLED", False)
     paths = [make_file(f"2024/Kategorie/Seminar/Feedback_{i}.pdf") for i in range(2)]
     page = Mock(spec=ft.Page)
     screen = CleanupScreen(page, CleanupWorkflow(DeletionService(root, tmp_path / "actions.csv")))
